@@ -24,7 +24,7 @@ plugin.textMap = {
     danielsan: ":fireworks: :trophy: :fireworks:",
     deeper: plugin.formatImage("images/top.gif"),
     drama: plugin.formatImage("drama.jpg"),
-    greatjob: plugin.IMAGE_PATH + "greatjob.png",
+    greatjob: plugin.formatImage("greatjob.png"),
     greyjoy: ":confounded::trumpet:",
     guarantee: "guarantees it :ok_hand:",
     heygirl: ":sparkles::information_desk_person::sparkles:",
@@ -55,15 +55,15 @@ plugin.textMap = {
     yodel: ":mega::mount_fuji::hear_no_evil:"
 };
 
-plugin.Sound = function (matcher, key) {
+plugin.Sound = function (matcher, keyName) {
     this.matcher = matcher;
     this.replacementString = function (m, g1) {
-        var key = g1,
+        var key = keyName || g1,
             extra = plugin.textMap[key];
 
         if (extra) {
             // handle emoji
-            extra = extra.replace(/:(\w+):/gi, '<img src="' + plugin.IMAGE_PATH + 'emoji/$1.png" class="emoticons" height="16" width="16" style="position:relative; top:2px" alt="$1" title="$1" />');
+            extra = extra.replace(/:(\w+):/gi, '<img src="' + plugin.IMAGE_PATH + 'emoji/$1.png" class="emoticons" height="24" width="24" style="position:relative; top:2px" alt="$1" title="$1" />');
         }
         return (extra ? extra + " " : "") + '<audio src="' + plugin.AUDIO_PATH + key + '.mp3" autoplay controls style="position:relative; display: inline-block; min-height: 15px; min-width: 100px">' + key + '</audio>';
     };
@@ -71,7 +71,7 @@ plugin.Sound = function (matcher, key) {
 
 plugin.sounds = (function () {
 	var allSounds = [
-		[/^\/play\s+(56k|bell|bezos|bueller|clowntown|crickets|dangerzone|danielsan|deeper|drama|greatjob|greyjoy|guarantee|heygirl|horn|horror|inconceivable|live|loggins|makeitso|nyan|ohmy|ohyeah|pushit|rimshot|sax|secret|sexyback|story|tada|tmyk|trombone|vuvuzela|what|whoomp|yodel)/ig, '$1'],
+		[/^\/play\s+(56k|bell|bezos|bueller|clowntown|crickets|dangerzone|danielsan|deeper|drama|greatjob|greyjoy|guarantee|heygirl|horn|horror|inconceivable|live|loggins|makeitso|nyan|ohmy|ohyeah|pushit|rimshot|sax|secret|sexyback|story|tada|tmyk|trombone|vuvuzela|what|whoomp|yodel)/ig, null],
         // special cases
 		[/^\/play\s+no+/ig, 'noooo'],
 		[/^\/play\s+tro(lo)+/ig, 'trololo'],
@@ -88,28 +88,37 @@ plugin.sounds = (function () {
 		);
 	}
 
+    // match for linked mp3s
+	_sounds.push({
+	    matcher: /^\/play\s+(?:<a[^>]*>)?((?:https?\:)?\/\/\S+\.(?:mp3|wav|mp4|aac|m4[abpvr]|og[gaxv]|3g[p2]))(?:<\/a>)?/ig,
+	    replacementString: '<audio src="$1" controls style="position:relative; display: inline-block; min-height: 15px; min-width: 100px">$1</audio> <a href="$1">download</a>'
+	});
+
     // default match for invalid or help entries
-	_sounds.push(
-        {
-            matcher: /^\/play/ig,
-            replacementString: "usage: <pre>\/play [56k|bell|bezos|bueller|clowntown|crickets|dangerzone|danielsan|deeper|drama|greatjob|greyjoy|guarantee|heygirl|horn|horror|inconceivable|live|loggins|makeitso|noooo|nyan|ohmy|ohyeah|pushit|rimshot|sax|secret|sexyback|story|tada|tmyk|trololo|trombone|vuvuzela|what|whoomp|yeah|yodel]</pre>"
-        }
-	);
+	_sounds.push({
+        matcher: /^\/play/ig,
+        replacementString: "usage: <pre>\/play [56k|bell|bezos|bueller|clowntown|crickets|dangerzone|danielsan|deeper|drama|greatjob|greyjoy|guarantee|heygirl|horn|horror|inconceivable|live|loggins|makeitso|noooo|nyan|ohmy|ohyeah|pushit|rimshot|sax|secret|sexyback|story|tada|tmyk|trololo|trombone|vuvuzela|what|whoomp|yeah|yodel]\n" +
+            "\/play [uri to audio file]</pre>"
+    });
 
 	return _sounds;
 }());
 
 plugin.onMessageInsertion = function (talkerEvent) {
     var element = Talker.getLastInsertion();
+    console.log("Talker.getLastInsertion()");
+    console.log(element);
 
 	_.each(plugin.sounds, function (sound) {
-	    element.replace(sound.matcher, sound.replacementString);
+	    element[0].innerHTML = element[0].innerHTML.replace(sound.matcher, sound.replacementString);
 	});
 };
 
 plugin.onCommand = function (talkerEvent) {
     if (talkerEvent.command == plugin.command) {
         // pass command through
+        console.log("Talker.getMessageBox().val()");
+        console.log(Talker.getMessageBox().val());
         Talker.sendMessage(Talker.getMessageBox().val());
         Talker.getMessageBox().val('');
         return false;
